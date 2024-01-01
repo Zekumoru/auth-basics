@@ -65,6 +65,12 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 
+// Set user in the res.locals
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  next();
+});
+
 app.get("/", (req, res) => res.render("index", { user: req.user }));
 
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
