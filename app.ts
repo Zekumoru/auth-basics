@@ -65,7 +65,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/", (req, res) => res.render("index"));
+app.get("/", (req, res) => res.render("index", { user: req.user }));
+
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
 app.post("/sign-up", [
   // Validate and sanitize inputs
@@ -88,5 +89,22 @@ app.post("/sign-up", [
     res.redirect("/");
   })
 ]);
+
+app.post(
+  "/log-in",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/"
+  })
+);
+
+app.get("/log-out", (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/");
+  });
+});
 
 app.listen(port, () => console.log(`Server running on http://${hostname}:${port}/`));
