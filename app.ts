@@ -75,7 +75,14 @@ app.use((req, res, next) => {
 
 app.get("/", (req, res) => res.render("index", { user: req.user }));
 
-app.get("/sign-up", (req, res) => res.render("sign-up-form"));
+app.get("/sign-up", (req, res) => {
+  if (res.locals.currentUser) {
+    return res.redirect('/');
+  }
+
+  res.render("sign-up-form")
+});
+
 app.post("/sign-up", [
   // Validate and sanitize inputs
   body('username')
