@@ -8,6 +8,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import path from 'path';
 import asyncHandler from 'express-async-handler';
 import { body } from 'express-validator';
+import bcrypt from 'bcryptjs';
 
 const mongoDb = process.env.MONGODB_CONNECT_STRING;
 const port = process.env.PORT ?? 3000;
@@ -38,9 +39,10 @@ passport.use(
       if (!user) {
         return done(null, false, { message: "Incorrect username" });
       };
-      if (user.password !== password) {
-        return done(null, false, { message: "Incorrect password" });
-      };
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        return done(null, false, { message: "Incorrect password" })
+      }
       return done(null, user);
     } catch (err) {
       return done(err);
@@ -86,14 +88,20 @@ app.post("/sign-up", [
     .escape(),
 
   // Process request after validation and sanitization
-  asyncHandler(async (req, res, next) => {
-    const user = new User({
-      username: req.body.username,
-      password: req.body.password
+  asyncHandler((req, res, next) => {
+    bcrypt.hash(req.body.password, 10, async (err, hashedPassword) => {
+      // if err, do something
+      if (err) return next(err);
+
+      // otherwise, store hashedPassword in DB
+      const user = new User({
+        username: req.body.username,
+        password: hashedPassword
+      });
+      await user.save();
+      res.redirect("/");
     });
-    await user.save();
-    res.redirect("/");
-  })
+  }),
 ]);
 
 app.post(
