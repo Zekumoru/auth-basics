@@ -4,7 +4,7 @@ import mongoose, { Schema } from 'mongoose';
 import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
-import { Strategy } from 'passport-local';
+import { Strategy as LocalStrategy } from 'passport-local';
 import path from 'path';
 import asyncHandler from 'express-async-handler';
 import { body } from 'express-validator';
@@ -30,6 +30,37 @@ app.set("views", path.join(__dirname, 'views'));
 app.set("view engine", "ejs");
 
 app.use(session({ secret: "cats", resave: false, saveUninitialized: true }));
+
+passport.use(
+  new LocalStrategy(async (username, password, done) => {
+    try {
+      const user = await User.findOne({ username: username });
+      if (!user) {
+        return done(null, false, { message: "Incorrect username" });
+      };
+      if (user.password !== password) {
+        return done(null, false, { message: "Incorrect password" });
+      };
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    };
+  })
+);
+
+passport.serializeUser((user, done) => {
+  done(null, (user as unknown as { id: string }).id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err);
+  };
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
